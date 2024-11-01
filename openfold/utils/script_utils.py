@@ -50,7 +50,7 @@ def make_output_directory(output_dir, model_name, multiple_model_mode):
     return prediction_dir
 
 
-def load_models_from_command_line(config, model_device, openfold_checkpoint_path, jax_param_path, output_dir):
+def load_models_from_command_line(config, intermediate_config, model_device, openfold_checkpoint_path, jax_param_path, output_dir):
     # Create the output directory
 
     multiple_model_mode = count_models_to_evaluate(openfold_checkpoint_path, jax_param_path) > 1
@@ -61,7 +61,7 @@ def load_models_from_command_line(config, model_device, openfold_checkpoint_path
         for path in jax_param_path.split(","):
             model_basename = get_model_basename(path)
             model_version = "_".join(model_basename.split("_")[1:])
-            model = AlphaFold(config)
+            model = AlphaFold(config, intermediate_config)
             model = model.eval()
             import_jax_weights_(
                 model, path, version=model_version
@@ -75,7 +75,7 @@ def load_models_from_command_line(config, model_device, openfold_checkpoint_path
 
     if openfold_checkpoint_path:
         for path in openfold_checkpoint_path.split(","):
-            model = AlphaFold(config)
+            model = AlphaFold(config, intermediate_config)
             model = model.eval()
             checkpoint_basename = get_model_basename(path)
             if os.path.isdir(path):

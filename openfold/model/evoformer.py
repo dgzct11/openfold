@@ -392,6 +392,8 @@ class EvoformerBlock(MSABlock):
         fuse_projection_weights: bool,
         inf: float,
         eps: float,
+        block_num: int,
+        intermediate_config = None,
     ):
         super(EvoformerBlock, self).__init__(c_m=c_m,
                                              c_z=c_z,
@@ -407,10 +409,13 @@ class EvoformerBlock(MSABlock):
                                              opm_first=opm_first,
                                              fuse_projection_weights=fuse_projection_weights,
                                              inf=inf,
-                                             eps=eps)
+                                             eps=eps,)
 
         # Specifically, seqemb mode does not use column attention
         self.no_column_attention = no_column_attention
+
+        self.block_num = block_num
+        self.intermediate_config = intermediate_config
 
         if not self.no_column_attention:
             self.msa_att_col = MSAColumnAttention(
@@ -549,6 +554,9 @@ class EvoformerBlock(MSABlock):
         else:
             m = input_tensors[0]
 
+        #save these intermediate tensors to memory if block num is in save_blocks
+        if(self.intermediate_config is not None and self.block_num in self.intermediate_config["save_blocks"]):
+            torch.save(z, f"{self.intermediate_config['save_dir']}/{self.intermediate_config['save_prefix']}_{self.block_num}.pt")
         return m, z
 
 
@@ -775,6 +783,7 @@ class EvoformerStack(nn.Module):
         eps: float,
         clear_cache_between_blocks: bool = False, 
         tune_chunk_size: bool = False,
+        intermediate_config = None,
         **kwargs,
     ):
         """
@@ -831,7 +840,8 @@ class EvoformerStack(nn.Module):
 
         self.blocks = nn.ModuleList()
 
-        for _ in range(no_blocks):
+        #added block_num to keep track of the block number
+        for block_num in range(no_blocks):
             block = EvoformerBlock(
                 c_m=c_m,
                 c_z=c_z,
@@ -849,6 +859,8 @@ class EvoformerStack(nn.Module):
                 fuse_projection_weights=fuse_projection_weights,
                 inf=inf,
                 eps=eps,
+                block_num=block_num,
+                intermediate_config=intermediate_config,
             )
             self.blocks.append(block)
 

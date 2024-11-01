@@ -40,6 +40,8 @@ if (
 torch.set_grad_enabled(False)
 
 from openfold.config import model_config
+from openfold.intermediate_config import get_intermediate_config
+
 from openfold.data import templates, feature_pipeline, data_pipeline
 from openfold.data.tools import hhsearch, hmmsearch
 from openfold.np import protein
@@ -184,6 +186,15 @@ def main(args):
         long_sequence_inference=args.long_sequence_inference,
         use_deepspeed_evoformer_attention=args.use_deepspeed_evoformer_attention,
         )
+    
+    intermediate_config = get_intermediate_config(
+        save_all_blocks=args.save_all_blocks,
+        save_prefix=args.intermediate_prefix,
+        save_dir=args.intermediate_dir,
+        generate_final_outputs=args.generate_final_outputs,
+    )
+
+    
 
     if args.experiment_config_json: 
         with open(args.experiment_config_json, 'r') as f:
@@ -275,6 +286,7 @@ def main(args):
     feature_dicts = {}
     model_generator = load_models_from_command_line(
         config,
+        intermediate_config,
         args.model_device,
         args.openfold_checkpoint_path,
         args.jax_param_path,
@@ -475,6 +487,19 @@ if __name__ == "__main__":
         "--use_deepspeed_evoformer_attention", action="store_true", default=False, 
         help="Whether to use the DeepSpeed evoformer attention layer. Must have deepspeed installed in the environment.",
     )
+    parser.add_argument(
+        "--save_all_blocks", action="store_true", default=False,
+    )
+    parser.add_argument(
+        "--intermediate_prefix", type=str, default="pair_reps_",
+    )
+    parser.add_argument(
+        "--intermediate_dir", type=str, default="intermediate_outputs",
+    )
+    parser.add_argument(
+        "--generate_final_outputs", action="store_true", default=True,
+    )
+
     add_data_args(parser)
     args = parser.parse_args()
 

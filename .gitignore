@@ -10,3 +10,6 @@ data
 openfold/resources/
 tests/test_data/
 cutlass/
+intermediate_outputs/
+output_dir/
+fasta_dir/

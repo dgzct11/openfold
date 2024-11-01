@@ -69,7 +69,7 @@ class AlphaFold(nn.Module):
     Implements Algorithm 2 (but with training).
     """
 
-    def __init__(self, config):
+    def __init__(self, config, intermediate_config=None):
         """
         Args:
             config:
@@ -79,6 +79,7 @@ class AlphaFold(nn.Module):
 
         self.globals = config.globals
         self.config = config.model
+        self.intermediate_config = intermediate_config
         self.template_config = self.config.template
         self.extra_msa_config = self.config.extra_msa
         self.seqemb_mode = config.globals.seqemb_mode_enabled
@@ -122,6 +123,7 @@ class AlphaFold(nn.Module):
             )
 
         self.evoformer = EvoformerStack(
+            intermediate_config=intermediate_config,
             **self.config["evoformer_stack"],
         )
 
@@ -438,7 +440,8 @@ class AlphaFold(nn.Module):
         outputs["single"] = s
 
         del z
-
+        # TODO to not predict structure if not recyling
+        
         # Predict 3D structure
         outputs["sm"] = self.structure_module(
             outputs,
