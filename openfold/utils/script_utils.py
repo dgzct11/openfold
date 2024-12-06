@@ -157,7 +157,7 @@ def run_model(model, batch, tag, output_dir):
 
         logger.info(f"Running inference for {tag}...")
         t = time.perf_counter()
-        out = model(batch)
+        out = model(batch, tag=tag)
         inference_time = time.perf_counter() - t
         logger.info(f"Inference time: {inference_time}")
         update_timings({tag: {"inference": inference_time}}, os.path.join(output_dir, "timings.json"))

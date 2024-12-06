@@ -40,7 +40,11 @@ SEARCH_PARAM="--num-iterations 3 --db-load-mode ${DB_LOAD_MODE} -a -s 8 -e 0.1 -
 FILTER_PARAM="--filter-msa ${FILTER} --filter-min-enable 1000 --diff ${DIFF} --qid 0.0,0.2,0.4,0.6,0.8,1.0 --qsc 0 --max-seq-id 0.95"
 EXPAND_PARAM="--expansion-mode 0 -e ${EXPAND_EVAL} --expand-filter-clusters ${FILTER} --max-seq-id 0.95"
 mkdir -p "${BASE}"
+
+echo "Creating DBs"
 "${MMSEQS}" createdb "${QUERY}" "${BASE}/qdb"
+
+echo "Searching"
 "${MMSEQS}" search "${BASE}/qdb" "${DBBASE}/${DB1}" "${BASE}/res" "${BASE}/tmp" $SEARCH_PARAM
 "${MMSEQS}" expandaln "${BASE}/qdb" "${DBBASE}/${DB1}${SEQ}" "${BASE}/res" "${DBBASE}/${DB1}${ALN}" "${BASE}/res_exp" --db-load-mode ${DB_LOAD_MODE} ${EXPAND_PARAM}
 "${MMSEQS}" mvdb "${BASE}/tmp/latest/profile_1" "${BASE}/prof_res"

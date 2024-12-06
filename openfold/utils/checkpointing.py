@@ -44,6 +44,7 @@ def checkpoint_blocks(
     blocks: List[Callable],
     args: BLOCK_ARGS,
     blocks_per_ckpt: Optional[int],
+    tag=None,
 ) -> BLOCK_ARGS:
     """
     Chunk a list of blocks and run each chunk with activation
@@ -69,7 +70,10 @@ def checkpoint_blocks(
 
     def exec(b, a):
         for block in b:
-            a = wrap(block(*a))
+            try:
+                a = wrap(block(*a, tag=tag))
+            except TypeError:
+                a = wrap(block(*a))
         return a
 
     def chunker(s, e):

@@ -19,7 +19,7 @@ import torch.nn as nn
 from typing import Tuple, Sequence, Optional
 from functools import partial
 from abc import ABC, abstractmethod
-
+import os
 from openfold.model.primitives import Linear, LayerNorm
 from openfold.model.dropout import DropoutRowwise, DropoutColumnwise
 from openfold.model.msa import (
@@ -439,6 +439,7 @@ class EvoformerBlock(MSABlock):
         _attn_chunk_size: Optional[int] = None,
         _offload_inference: bool = False,
         _offloadable_inputs: Optional[Sequence[torch.Tensor]] = None,
+        tag: str = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
 
         msa_trans_mask = msa_mask if _mask_trans else None
@@ -556,7 +557,9 @@ class EvoformerBlock(MSABlock):
 
         #save these intermediate tensors to memory if block num is in save_blocks
         if(self.intermediate_config is not None and self.block_num in self.intermediate_config["save_blocks"]):
-            torch.save(z, f"{self.intermediate_config['save_dir']}/{self.intermediate_config['save_prefix']}_{self.block_num}.pt")
+            #make the dir if it doesn't exist
+            os.makedirs(f"{self.intermediate_config['save_dir']}/{tag}", exist_ok=True)
+            torch.save(z, f"{self.intermediate_config['save_dir']}/{tag}/{tag}_{self.intermediate_config['save_prefix']}_{self.block_num}.pt")
         return m, z
 
 
@@ -933,6 +936,7 @@ class EvoformerStack(nn.Module):
         use_lma: bool = False,
         use_flash: bool = False,
         _mask_trans: bool = True,
+        tag: str = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         assert(not (self.training or torch.is_grad_enabled()))
         blocks = self._prep_blocks(
@@ -956,6 +960,7 @@ class EvoformerStack(nn.Module):
                 None, 
                 _offload_inference=True,
                 _offloadable_inputs=input_tensors,
+                tag=tag,
             )
             input_tensors[0] = m
             input_tensors[1] = z
@@ -978,6 +983,7 @@ class EvoformerStack(nn.Module):
         use_flash: bool = False,
         inplace_safe: bool = False,
         _mask_trans: bool = True,
+        tag: str = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Args:
@@ -1030,6 +1036,7 @@ class EvoformerStack(nn.Module):
             blocks,
             args=(m, z),
             blocks_per_ckpt=blocks_per_ckpt,
+            tag=tag,
         )
 
         s = self.linear(m[..., 0, :, :])

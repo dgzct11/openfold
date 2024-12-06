@@ -17,6 +17,7 @@ import weakref
 
 import torch
 import torch.nn as nn
+import pdb
 
 from openfold.data import data_transforms_multimer
 from openfold.utils.feats import (
@@ -208,7 +209,7 @@ class AlphaFold(nn.Module):
         diff = torch.sqrt(sq_diff + eps).item()
         return diff <= self.config.recycle_early_stop_tolerance
 
-    def iteration(self, feats, prevs, _recycle=True):
+    def iteration(self, feats, prevs, _recycle=True, tag=None):
         # Primary output dictionary
         outputs = {}
 
@@ -362,6 +363,7 @@ class AlphaFold(nn.Module):
                     )
 
         # Embed extra MSA features + merge with pairwise embeddings
+        #pdb.set_trace()
         if self.config.extra_msa.enabled:
             if self.globals.is_multimer:
                 extra_msa_fn = data_transforms_multimer.build_extra_msa_feat
@@ -406,7 +408,7 @@ class AlphaFold(nn.Module):
         # Run MSA + pair embeddings through the trunk of the network
         # m: [*, S, N, C_m]
         # z: [*, N, N, C_z]
-        # s: [*, N, C_s]          
+        # s: [*, N, C_s]     
         if self.globals.offload_inference:
             input_tensors = [m, z]
             del m, z
@@ -418,6 +420,7 @@ class AlphaFold(nn.Module):
                 use_deepspeed_evo_attention=self.globals.use_deepspeed_evo_attention,
                 use_lma=self.globals.use_lma,
                 _mask_trans=self.config._mask_trans,
+                tag=tag,
             )
 
             del input_tensors
@@ -433,6 +436,7 @@ class AlphaFold(nn.Module):
                 use_flash=self.globals.use_flash,
                 inplace_safe=inplace_safe,
                 _mask_trans=self.config._mask_trans,
+                tag=tag,
             )
 
         outputs["msa"] = m[..., :n_seq, :, :]
@@ -493,7 +497,7 @@ class AlphaFold(nn.Module):
         for b in self.extra_msa_stack.blocks:
             b.ckpt = self.config.extra_msa.extra_msa_stack.ckpt
 
-    def forward(self, batch):
+    def forward(self, batch, tag=None):
         """
         Args:
             batch:
@@ -571,7 +575,8 @@ class AlphaFold(nn.Module):
                 outputs, m_1_prev, z_prev, x_prev, early_stop = self.iteration(
                     feats,
                     prevs,
-                    _recycle=(num_iters > 1)
+                    _recycle=(num_iters > 1),
+                    tag=tag,
                 )
 
                 num_recycles += 1

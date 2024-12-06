@@ -80,6 +80,7 @@ def main(args):
         ]
 
         logging.info('Launching subprocess "%s"', " ".join(cmd))
+        print('Launching subprocess "%s"' % " ".join(cmd))
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
